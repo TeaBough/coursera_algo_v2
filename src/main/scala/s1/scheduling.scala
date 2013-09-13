@@ -55,7 +55,6 @@ object scheduling {
 
     val input = scala.io.Source.fromFile("src/main/scala/s1/jobs.txt", "utf-8").getLines.mkString("\n").split("\n").toList.drop(1).map(x => new Job(x.split(" ")(0).toDouble,x.split(" ")(1).toDouble))
     println(input.last)
-    //val pq = new mutable.PriorityQueue[Job]()(MyOrdering) ++ (List(Job(30,90),Job(10,30),Job(20,40),Job(30,50),Job(20,60),Job(10,50)))
     println(ComputeWeightedCompletionTime(List(Job(30,90),Job(10,30),Job(20,40),Job(30,50),Job(20,60),Job(10,50))))
     println(ComputeWeightedCompletionTimeRatio(List(Job(30,90),Job(10,30),Job(20,40),Job(30,50),Job(20,60),Job(10,50))))
 
