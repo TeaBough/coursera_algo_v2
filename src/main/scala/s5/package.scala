@@ -18,14 +18,24 @@ object s5 {
     //var set:Int = (1 << k) - 1
     var set: Int = s
     val limit: Int = (1 << n);
-    if (set < limit) {
+    // Gosper's hack:
+    val c: Int = set & -set;
+    val r: Int = set + c;
+    (((r ^ set) >>> 2) / c) | r;
+  }
 
+
+  def NGosperHackEA(s: Int, k: Int, n: Int) = {
+    //var set:Int = (1 << k) - 1
+    var set: Int = s
+    val limit: Int = (1 << n);
+    while (set < limit) {
+      println(getIndexFromBin(set))
       // Gosper's hack:
       val c: Int = set & -set;
       val r: Int = set + c;
-      (((r ^ set) >>> 2) / c) | r;
+      set = (((r ^ set) >>> 2) / c) | r;
     }
-    else -1
   }
 
   def distance(c1: City, c2: City): Double = {
@@ -43,7 +53,8 @@ object s5 {
 
 
   def main(args: Array[String]) {
-    val input = scala.io.Source.fromFile("src/main/scala/s5/tsp2.txt", "utf-8")
+    //NGosperHackEA(3, 2, 8)
+    val input = scala.io.Source.fromFile("src/main/scala/s5/tsp4.txt", "utf-8")
     val splited_input = input.getLines.mkString("\n").split("\n")
     val n = splited_input.head.toInt
     val my_input: List[String] = splited_input.toList.drop(1)
@@ -60,37 +71,41 @@ object s5 {
     var old_map = HashMap[(Int, Int), Double]()
     //var c_arr = Array.ofDim[Double](math.pow(2,n).toInt,2)
     old_map.update((1, 1), 0.0)
-   // println((30.0 / math.pow(2, 1)).toInt)
-  //  println("AHHH " + ((1 << 8) - 1))
-   val t0 = System.nanoTime()
+    // println((30.0 / math.pow(2, 1)).toInt)
+    //  println("AHHH " + ((1 << 8) - 1))
+    val t0 = System.nanoTime()
     for (s <- 2 to n) {
       println(s)
       old_map = new_map
       old_map.update((1, 1), 0.0)
       new_map = HashMap[(Int, Int), Double]()
       var seq: Int = (1 << s) - 1
-      while (seq != -1) {
+      while (seq < (1 << n)) {
+        old_map.update((seq, 1), 999999999.999)
         if (seq % 2 == 1) {
           val l: List[Int] = getIndexFromBin(seq).sorted.filter(_ != 1)
+          println(getIndexFromBin(seq))
           for (j <- l) {
             val min = l.::(1).foldLeft(2147423647.77)((acc, i) => {
               if (i != j) {
-                val c: Double = old_map.get((seq - math.pow(2, j-1).toInt, i)).getOrElse(2147453647.666)
+                val c: Double = old_map.get((seq - math.pow(2, j - 1).toInt, i)).getOrElse(88888888.666)
                 val d = distance(cities(i - 1), cities(j - 1))
                 val res = c + d
                 if (res < acc) res else acc
               }
               else acc
             })
+
             new_map.update((seq, j), min)
+            println(new_map)
           }
         }
-        seq = NGosperHack(seq, s, n-1)
+        seq = NGosperHack(seq, s, n)
       }
     }
-    val res = (2 to n).map(x => new_map.get((1 << n) - 1, x).getOrElse(2147003647.88) + distance(cities(x - 1), cities(0)))
+    val res = (2 to n).map(x => new_map.get((1 << n) - 1, x).getOrElse(6666.88) + distance(cities(x - 1), cities(0)))
     val t1 = System.nanoTime()
-    println(new_map)
+    //println(res)
     println(res.foldLeft(2000483647.9999)((acc, num) => math.min(acc, num)))
     println("Chrono Non : " + (t1 - t0).toDouble / 1000000000 + "s")
 
