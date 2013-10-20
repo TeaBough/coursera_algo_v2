@@ -8,16 +8,15 @@ import scala.collection.mutable.HashMap
  * User: thibault
  * Date: 18/10/13
  * Time: 14:08
- * To change this template use File | Settings | File Templates.
+ */
+
+/*
+TODO : Refactor the backtracking method using a HashMap instead of a list
+Using a list is too SLOW ! Using more than 100 clauses might take an eternity !
+See the preProcessing method
  */
 object TwoSAT {
-  /*  def TransformTwoSatInputToGraph(l: List[(Int,Int)]): List[Int] = {
-      l.flatMap(line => {
-        val a = line.split(" ")(0).toInt
-        val b = line.split(" ")(1).toInt
-        List((a * (-1)).toInt() + " " + b.toInt(), (b * (-1)).toInt() + " " + a.toInt() )
-      })
-    }*/
+  
   type Clause = List[Int]
   type Formula = List[Clause]
 
@@ -33,14 +32,14 @@ object TwoSAT {
   }
 
   def replaceWithFalse(c: Clause, a: Int): Option[Clause] = {
-    val x = c.head
-    val y = c.tail.head
-    if (x == a * (-1) || y == a * (-1))
+    val left = c.head
+    val right = c.tail.head
+    if (left == a * (-1) || right == a * (-1))
       None
-    else if (x == a && y != a) Option(List(0, y))
-    else if (y == a && x != a) Option(List(x, 0))
-    else if (y == a && x == a) Option(List(0, 0))
-    else Option(List(x, y))
+    else if (left == a && right != a) Option(List(0, right))
+    else if (right == a && left != a) Option(List(left, 0))
+    else if (right == a && left == a) Option(List(0, 0))
+    else Option(List(left, right))
   }
 
   def choose(P: List[Formula]): (Formula, List[Formula]) = {
@@ -83,8 +82,6 @@ object TwoSAT {
       var S: List[Formula] = List(_S)
       breakable {
         while (!S.isEmpty) {
-          val size = S.size
-          //println(size)
           val res = choose(S)
           val p = res._1
           S = res._2
@@ -102,113 +99,39 @@ object TwoSAT {
     }
   }
 
-  def preProcessing(l: Formula, size: Int, map:HashMap[Int, Int]): TwoSAT.Formula = {
-    var hmap = map
-    def preProcessingR(formular: Formula): TwoSAT.Formula = {
-      var ll = formular
-      val variables: List[Int] = removeUseLessVariables(size, hmap)
-      println(variables)
-      var i = 0
+  def preProcessing(formular: HashMap[Int, Set[List[Int]]], size: Int): HashMap[Int, Set[List[Int]]] = {
+
+    def preProcessingR: Unit = {
+      val variables = formular.keys
       variables.foreach(x => {
-        //println(variables.size - i)
-        i = i +1
-        if (!hmap.contains(x * (-1))) {
-          val lll = ll
-          ll = ll.filter(!_.contains(x))
-          lll.diff(ll).foreach( c => {
-            hmap.remove(c.head)
-            hmap.remove(c.tail.head)
+        if (formular.get(x * (-1)).isEmpty) {
+          val nei: Set[List[Int]] = formular.get(x).getOrElse(Set())
+          nei.flatten.foreach(xx => {
+            val cl = formular.get(xx).getOrElse(Set())
+            formular += (xx -> cl.filterNot(p => p.contains(x)))
+            if (formular.get(xx).getOrElse(Set()).isEmpty) formular.remove(xx)
           })
         }
       })
-      println("BOOOMMM")
-      ll
     }
-    var res2 = l
-    var res1 = List(List(1))
-    while ((res1.size != res2.size) && (res2.size != 0)) {
-      res1 = preProcessingR(res2)
-      res2 = preProcessingR(res1)
+    preProcessingR
+    var res1 = 0
+    var res2 = 1
+    while ((res1 != res2) && (res2 != 0)) {
+      res1 = formular.size
+      preProcessingR
+      preProcessingR
+      res2 = formular.size
     }
-/*    println("BIG MLI " + mli)
-    println(l)
-
-    def preProcessingR(l: Formula): Formula = {
-      val lmli = (1 to size).foldLeft(List():List[Int])((acc,num) => {
-        if (!hmap.get(num).isEmpty) acc.::(num)
-        else if (!hmap.get((-1)*num).isEmpty) acc.::(num*(-1))
-        else acc }
-      )
-      */
- /*     println("Pre MLI :  " + lmli)
-      println(hmap.keys)
-      val mmli = lmli.foldLeft(List():List[Int])((acc,num) => {
-        if (hmap.get(num*(-1)).isEmpty) acc.::(num)
-        else acc }
-      )
-      println("To Delete =  " + mmli)
-      val res = l.filterNot( x => {
-        val intersect = x.intersect(mmli)
-        if (!intersect.isEmpty){
-          intersect.foreach(z => {
-//          mli = mli.diff(List(z))
-            hmap.remove(z)
-          })
-        }
-        !intersect.isEmpty
-      })
-      println("Res : " + res)
-      res
-    }
-    println("==========================================")
-    val r = preProcessingR(l)
-    println("==========================================")
-    val rr = preProcessingR(r)
-    println("==========================================")
-    val rrr = preProcessingR(rr)
-    println("==========================================")
-*/
-    /*var res2 = l
-    var res1 = List(List(1))
-    while ((res1.size != res2.size) && (res2.size != 0)) {
-      println("==========================================")
-      res1 = preProcessingR(res2)
-      println("==========================================")
-      res2 = preProcessingR(res1)
-      println("==========================================")
-    }*/
-    res2
-  }
-
-
-  def removeUseLessVariables(size: Int, hmap: HashMap[Int, Int]): List[Int] = {
-    val positiv_var = (1 to size).foldLeft(List(): List[Int])((acc, num) => {
-      if (!hmap.get(num).isEmpty) acc.::(num)
-      else acc
-    }
-    )
-    val negativ_var = ((-1) * size to (-1)).foldLeft(List(): List[Int])((acc, num) => {
-      if (!hmap.get(num).isEmpty) acc.::(num)
-      else acc
-    }
-    )
-    negativ_var.:::(positiv_var)
-  }
-
-  def listUseFullVariables(l: List[List[Int]], n:Int): List[Int] = {
-    (1 to n).foldLeft(List():List[Int])((acc,num) => {
-      if (l.exists(_.contains(num))) acc.::(num)
-      else acc }
-    )
+    formular
   }
 
   def main(args: Array[String]) {
-    val input = scala.io.Source.fromFile("src/main/scala/s6/testT.txt", "utf-8")
+    val input = scala.io.Source.fromFile("src/main/scala/s6/2sat3.txt", "utf-8")
     val splited_input = input.getLines.mkString("\n").split("\n")
     val n = splited_input.head.toInt
     val my_input: List[String] = splited_input.toList.drop(1)
-    var hmap = HashMap[Int, Int]()
-    var hhmap = HashMap[Int, Set[List[Int]]]()
+    val hhmap = HashMap[Int, Set[List[Int]]]()
     val P = my_input.map(line => {
       val a = line.split(" ")(0).toInt
       val b = line.split(" ")(1).toInt
@@ -217,25 +140,13 @@ object TwoSAT {
     my_input.foreach(line => {
       val a = line.split(" ")(0).toInt
       val b = line.split(" ")(1).toInt
-      hmap += (a -> 1)
-      hmap += (b -> 1)
-    })
-    my_input.foreach(line => {
-      val a = line.split(" ")(0).toInt
-      val b = line.split(" ")(1).toInt
-      hhmap += (a -> hhmap.get(a).getOrElse(Set()).+(List(a,b)))
-      hhmap += (b -> hhmap.get(a).getOrElse(Set()).+(List(a,b)))
+      hhmap += (a -> hhmap.get(a).getOrElse(Set()).+(List(a, b)))
+      hhmap += (b -> hhmap.get(b).getOrElse(Set()).+(List(a, b)))
     })
 
-    //val L = listUseFullVariables(P,n)
-    println(hhmap.get(-8))
     println("Start Preprocessing")
-    //val PP: Formula = preProcessing(P, n,hmap)
-    //println(PP.size)
-
-
-
+    val PP = preProcessing(hhmap, n)
+    println("Finished Preprocessing")
+    println(Backtracking(PP.values.flatten.toSet.toList))
   }
-
-
 }
